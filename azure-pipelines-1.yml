@@ -1,0 +1,97 @@
+trigger: none
+pool: Hitesh_Pool
+stages:
+  - stage: 
+    jobs:
+      - job: install
+        steps:
+          - task: TerraformInstaller@1
+            displayName: 'terraform install'
+            inputs:
+              terraformVersion: 'latest'
+
+  - stage: 
+    jobs:
+      - job: initialize
+        steps:
+          - task: TerraformTask@5
+            displayName: 'terraform init'
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/Environments/Dev'
+              backendServiceArm: 'terraform-sp-login'
+              backendAzureRmResourceGroupName: 'rg-workload'
+              backendAzureRmStorageAccountName: 'stgworkload'
+              backendAzureRmContainerName: 'containerworkload'
+              backendAzureRmKey: 'terraform.tfstate'
+
+  - stage: 
+    jobs:
+      - job: making_resource_group
+        steps:
+          - task: TerraformTask@5
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/Environments/Dev'
+              backendServiceArm: 'terraform-sp-login'
+              backendAzureRmResourceGroupName: 'rg-workload'
+              backendAzureRmStorageAccountName: 'stgworkload'
+              backendAzureRmContainerName: 'containerworkload'
+              backendAzureRmKey: 'terraform.tfstate'
+          - task: TerraformTask@5
+            displayName: 'RG_Making'
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/Environments/Dev'
+              commandOptions: '-auto-approve -var="mssql_server_id=dummy" -target=module.resource_group'
+              environmentServiceNameAzureRM: 'terraform-sp-login'
+
+  - stage: 
+    jobs:
+      - job: making_VNET
+        steps:
+          - task: TerraformTask@5
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/Environments/Dev'
+              backendServiceArm: 'terraform-sp-login'
+              backendAzureRmResourceGroupName: 'rg-workload'
+              backendAzureRmStorageAccountName: 'stgworkload'
+              backendAzureRmContainerName: 'containerworkload'
+              backendAzureRmKey: 'terraform.tfstate'
+          - task: TerraformTask@5
+            displayName: 'Vnet making'
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/Environments/Dev'
+              commandOptions: '-auto-approve -var="mssql_server_id=dummy" -target=module.virtual_network'
+              environmentServiceNameAzureRM: 'terraform-sp-login'
+
+  - stage: 
+    jobs:
+      - job:  making_Public_IP_Keyvault
+        steps:
+          - task: TerraformTask@5
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/Environments/Dev'
+              backendServiceArm: 'terraform-sp-login'
+              backendAzureRmResourceGroupName: 'rg-workload'
+              backendAzureRmStorageAccountName: 'stgworkload'
+              backendAzureRmContainerName: 'containerworkload'
+              backendAzureRmKey: 'terraform.tfstate'
+
+          - task: TerraformTask@5
+            displayName: 'public ip and keyvault'
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/Environments/Dev'
+              commandOptions: '-auto-approve -var="mssql_server_id=dummy" -target=module.public_ip -target=module.key_vaults'
+              environmentServiceNameAzureRM: 'terraform-sp-login'
